@@ -1,0 +1,337 @@
+@media (max-width: 678px) {
+    .header {
+        overflow: hidden;
+        z-index: 99;
+
+        &--open {
+            height: 96vh;
+            border-radius: 38px;
+            align-items: flex-start;
+            padding-top: 23px;
+        }
+
+        &__content {
+            position: absolute;
+            flex-direction: column;
+            top: 90px;
+            align-items: flex-start;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease 0s;
+        }
+
+        &__content--open {
+            display: flex;
+            opacity: 1;
+            visibility: visible;
+        }
+
+        &__nav-icon {
+            display: flex;
+        }
+
+         .nav {
+            flex-direction: column;
+            gap: 20px;
+            align-items: flex-start;
+
+            &__item {
+                font-size: 24px;
+            }
+         }
+    }
+
+    .main-width {
+        padding: 0 20px;
+    }
+
+    h1 {
+        font-size: 46px;
+
+        br {
+            display: none;
+        }
+    }
+
+    h2 {
+        font-size: 38px;
+    }
+
+    .main-block  { 
+
+       &__container {
+        flex-direction: column;
+       }
+
+       &__title {
+        margin-top: 0;
+       }
+
+       &__content {
+            min-width: 100%;
+            gap: 15px;
+       }
+
+       &__text {
+        br {
+            display: none;
+        }
+       }
+
+       &__verified {
+        top: 0;
+        left: 0;
+        padding: 8.32px 13.47px 8.31px 13.47px
+       }
+    }
+
+    .infographic-block {
+        padding-top: 110px;
+
+        &__content {
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        &__about-us {
+            order: 0;
+
+             .about {
+                padding: 0;
+
+                 &__conditions {
+                    flex-direction: column;
+                    align-items: stretch;
+                }
+             }
+        }
+
+        &__digits {
+            order: 1;
+        }
+
+        &__image {
+            order: 2;
+        }
+
+       
+    }
+
+    .tours-block {
+        padding-top: 80px;
+        padding-bottom: 10px;
+
+        &__container {
+            padding: 0;
+            gap: 30px;
+        }
+
+        &__list {
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        &__item {
+            width: 100%; 
+        }
+    }
+
+    .services-block {
+        padding-top: 80px;
+        padding-bottom: 10px;
+
+        &__container {
+            gap: 30px;
+        }
+
+        &__list {
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        &__item {
+            width: 100%; 
+
+            &-content {
+                padding: 20px;
+                width: 85%;
+            }
+
+            &-title {
+                margin: 25px 0 10px;
+            }
+
+            &-number {
+                display: none;
+            }
+        }
+    }
+
+    .locations-block {
+        padding-top: 80px;
+        padding-bottom: 10px;
+
+        &__container {
+            gap: 30px;
+        }
+
+        &__list {
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        &__item {
+            flex: none;
+            width: 100%;
+        }
+
+        &__title {
+            position: relative;
+        }
+
+
+        &__navigation {
+            position: absolute;
+            right: 0;
+            bottom: 0;
+        }
+
+        &__nav {
+            width: 50px;
+            height: 50px;
+        }
+
+        &__btn {
+            margin: 0 auto;
+        }
+    }
+
+    .advantages-block {
+        padding-top: 80px;
+        padding-bottom: 10px;
+
+        &__container {
+            gap: 30px;
+            flex-direction: column;
+        }
+
+        &__content {
+            gap: 30px;
+        }
+
+        &__list {
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        &__item {
+            width: 100%; 
+        }
+    }
+    
+    .reviews-block {
+        padding-top: 110px;
+        padding-bottom: 10px;
+
+        &__container {
+            gap: 30px;
+        }
+
+        &__list {
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        &__item {
+            width: 100%; 
+            padding: 20px;
+            position: relative;
+
+            &-author {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 20px;
+            }
+
+            &-text img {
+                position: absolute;
+                top: 35px;
+                right: 20px;      
+                  }
+        }
+    }
+
+    .destinations-block {
+        padding-top: 100px;
+        padding-bottom: 10px;
+
+        &__container {
+            gap: 30px;
+        }
+
+        &__list {
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        &__item {
+            width: 100%; 
+        }
+    }
+
+    .subscribe-block {
+        padding-top: 110px;
+        padding-bottom: 10px;
+
+        &__content{
+            max-width: 100%;
+            gap: 30px;
+        }
+
+        &__title h2 {
+            font-size: 28px;
+        }
+
+        &__form {
+            >div:first-child {
+                flex-direction: column;
+                gap: 20px;
+            }
+        }
+
+        &__input {
+            padding: 22px 60px;
+                width: 100%;
+        }
+
+        &__btn {
+            width: 100%;
+        }
+    }
+
+    footer {
+        padding-top: 80px;
+
+        .footer {
+            flex-direction: column;
+            padding-bottom: 0;
+            border-bottom: none;
+
+            &__block {
+                width: 100%;
+                padding-top: 40px;
+                border: 0;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+                padding-bottom: 40px;
+
+                &--middle {
+                    flex-direction: column;
+                }
+
+                &:last-child {
+                   padding-left: 0; 
+                }
+            }
+        }
+    }
+}

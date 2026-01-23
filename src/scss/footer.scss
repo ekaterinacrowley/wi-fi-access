@@ -1,0 +1,93 @@
+footer {
+    padding: 105px 0 15px;
+    background: #0A0322;
+
+    .footer {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        border-top: 1px solid rgba(255, 255, 255, 0.10);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+        padding-bottom: 105px;
+
+        &__block {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 30px;
+            padding-top: 105px;
+            width: 30%;
+
+            &:first-child {
+                padding-right: 50px;
+            }
+
+            &:last-child {
+                 padding-left: 50px;
+            }
+
+            &--middle {
+                width: 40%;
+                flex-direction: row;
+                justify-content: space-around;
+                border-right: 1px solid rgba(255, 255, 255, 0.10);
+                border-left: 1px solid rgba(255, 255, 255, 0.10);
+            }
+        } 
+
+        &__logo { 
+            max-width: 205px;
+        }
+
+        &__nav {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+
+            ul {
+                margin: 0;
+                padding: 0;
+
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+
+                li {
+                
+                padding-left: 20px;
+
+                a {
+                    color: #BDB9CD;
+                    font-size: 18px;
+                }
+            }
+            }
+        }
+
+        &__title {
+            color: #FFF;
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        &__images {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        &__image {
+            width: calc((100% - 30px) / 3);
+            aspect-ratio: 102 / 90;
+            border-radius: 12px;
+            background-size: cover;
+            width: 102px;
+    }
+}
+
+.copyright {
+    color: #BDB9CD;
+    text-align: center;
+    padding: 25px;;
+}
+}

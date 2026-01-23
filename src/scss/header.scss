@@ -1,0 +1,76 @@
+header {
+    position: relative;
+}
+
+.header {
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px 15px 15px 45px;
+    gap: 82px;
+    border-radius: 59px;
+    background: #FFF;
+    box-shadow: 0 4px 56px -16px rgba(8, 0, 30, 0.10);
+    position: absolute;
+    top: 15px;
+    left: 10px;
+    right: 10px;
+    
+     @media (max-width: 1440px) { 
+        gap: 6vw;
+    }
+
+    &__logo {
+        max-width: 205px;
+    }
+
+    &__content {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 82px;
+    }
+
+    .nav {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 40px;
+
+        &__item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: #666;
+            font-family: "Hanken Grotesk";
+            font-size: 16px;
+            font-style: normal;
+            font-weight: 600;
+            line-height: 20.8px;
+        }
+    }
+
+    &__lang {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+
+    &__nav-icon {
+        width: 44px;
+        height: 44px;
+        background: url(images/nav.webp) center no-repeat;
+        background-size: contain;
+        display: none;
+        cursor: pointer;
+        border: none;
+        padding: 0;
+        flex-shrink: 0;
+
+        &--open {
+            background: url(images/nav-close.webp) center no-repeat;
+        }
+    }
+}

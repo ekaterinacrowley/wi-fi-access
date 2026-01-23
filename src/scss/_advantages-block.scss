@@ -1,0 +1,43 @@
+.advantages-block {
+    padding-top: 115px;
+    padding-bottom: 80px;
+
+    &__container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 60px;
+        position: relative;
+    }
+
+    &__content {
+        display: flex;
+        flex-direction: column;
+        gap: 60px;
+        max-width: 500px;
+    }
+
+    &__list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    &__item {
+        padding: 20px 0;
+        border-bottom: 1px solid rgba(10, 3, 34, 0.10);
+
+        &-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        &-text {
+            color: #666;
+            margin-top: 20px;
+        }
+    }
+}
