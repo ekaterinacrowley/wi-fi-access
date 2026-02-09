@@ -1,3 +1,4 @@
+@charset "UTF-8";
 * {
   -webkit-box-sizing: border-box;
   -moz-box-sizing: border-box;
@@ -737,18 +738,51 @@ footer .footer__text {
   line-height: 20px;
 }
 
-.overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 71, 119, 0.9);
-  filter: blur(20px);
-  z-index: 98;
+.banner__logo,
+.banner__title,
+.banner__text,
+.banner__controls,
+.banner__infographics {
+  opacity: 0;
+}
+
+/* logo + title — выезд слева */
+.banner__logo,
+.banner__text,
+.banner__title {
+  transform: translateX(-60px);
+}
+
+/* btn + infographics — снизу */
+.banner__controls,
+.banner__infographics {
+  transform: translateY(60px);
+}
+
+.banner.is-loaded .banner__logo {
+  opacity: 1;
+  transform: translateX(0);
+  transition: 0.6s ease;
+}
+
+.banner.is-loaded .banner__title {
+  opacity: 1;
+  transform: translateX(0);
+  transition: 0.6s ease 0.15s;
+}
+
+/* кнопки */
+.banner.is-loaded .banner__controls {
+  opacity: 1;
+  transform: translateY(0);
+  transition: 0.6s ease 0.3s;
+}
+
+/* инфографика */
+.banner.is-loaded .banner__infographics {
+  opacity: 1;
+  transform: translateY(0);
+  transition: 0.6s ease 0.45s;
 }
 
 .popup-wrapper {
@@ -761,12 +795,26 @@ footer .footer__text {
   align-items: center;
   justify-content: center;
   z-index: 99;
+  background: rgba(0, 71, 119, 0.9);
+  z-index: 98;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+.popup-wrapper.visible {
+  opacity: 1;
+  visibility: visible;
+}
+.popup-wrapper.visible .popup {
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1);
 }
 
 .popup {
   display: flex;
-  width: 440px;
-  max-width: 352px;
+  width: 90vw;
+  max-width: 440px;
   padding: 20px;
   flex-direction: column;
   align-items: flex-start;
@@ -774,6 +822,77 @@ footer .footer__text {
   border-radius: 32px;
   background: #66C1FF;
   box-shadow: 0 25px 50px -12px rgba(28, 25, 23, 0.2);
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0);
+  transition: all 0.3s ease 0.1s;
+}
+.popup__image {
+  border-radius: 12px;
+  background: #002740;
+  position: relative;
+  width: 100%;
+  height: 126px;
+}
+.popup__image img {
+  position: absolute;
+  bottom: 0;
+  left: 20px;
+  min-height: 146px;
+  aspect-ratio: 358/181;
+}
+.popup__content {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 16px;
+}
+.popup__title {
+  color: #FFF;
+  font-family: "IBM Plex Serif";
+  font-size: 30px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 36px;
+  letter-spacing: -0.75px;
+}
+.popup__label {
+  display: flex;
+  padding: 12px 18px;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  align-self: stretch;
+  border-radius: 12px;
+  background: #0098FF;
+  color: #FFF;
+  text-align: center;
+  font-family: "IBM Plex Serif";
+  font-size: 22px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: normal;
+}
+.popup__text {
+  color: #FFF;
+  font-family: "IBM Plex Sans";
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 20px;
+}
+.popup__btn {
+  border-radius: 12px;
+  background: #FFF;
+  box-shadow: 0 10px 15px -3px rgba(0, 152, 255, 0.63);
+  color: #004777;
+  text-align: center;
+  font-family: "IBM Plex Sans";
+  font-size: 18px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 28px;
+  width: 100%;
 }
 
 /*# sourceMappingURL=styles.css.map */

@@ -198,4 +198,22 @@
       showDefaultState();
     });
   });
+  window.addEventListener("load", () => {
+    const banner = document.querySelector(".banner");
+    const popupWrapper = document.querySelector(".popup-wrapper");
+    const popup = document.querySelector(".popup");
+    banner.classList.add("is-loaded");
+    if (popupWrapper) {
+      setTimeout(() => {
+        popupWrapper.classList.add("visible");
+      }, 2e3);
+    }
+    if (popupWrapper && popup) {
+      popupWrapper.addEventListener("click", (e) => {
+        if (!popup.contains(e.target)) {
+          popupWrapper.classList.remove("visible");
+        }
+      });
+    }
+  });
 })();

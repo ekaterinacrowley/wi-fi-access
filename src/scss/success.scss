@@ -320,3 +320,50 @@ footer {
         }
     }
 }
+
+.banner__logo,
+.banner__title,
+.banner__text,
+.banner__controls,
+.banner__infographics {
+    opacity: 0;
+}
+
+/* logo + title — выезд слева */
+.banner__logo,
+.banner__text,
+.banner__title {
+    transform: translateX(-60px);
+}
+
+/* btn + infographics — снизу */
+.banner__controls,
+.banner__infographics {
+    transform: translateY(60px);
+}
+
+.banner.is-loaded .banner__logo {
+    opacity: 1;
+    transform: translateX(0);
+    transition: 0.6s ease;
+}
+
+.banner.is-loaded .banner__title {
+    opacity: 1;
+    transform: translateX(0);
+    transition: 0.6s ease 0.15s;
+}
+
+/* кнопки */
+.banner.is-loaded .banner__controls {
+    opacity: 1;
+    transform: translateY(0);
+    transition: 0.6s ease 0.3s;
+}
+
+/* инфографика */
+.banner.is-loaded .banner__infographics {
+    opacity: 1;
+    transform: translateY(0);
+    transition: 0.6s ease 0.45s;
+}
