@@ -188,6 +188,27 @@
     gap: 12px;
     align-self: stretch;
 
+
+    &.error {     
+      
+        & + span.error {
+      display: flex !important;
+      align-items: flex-start;
+      gap: 4px;
+      color: #FB2C36;
+      font-size: 12px;
+
+          &:before {
+            content:'';
+            display: block;
+            width: 12px;
+            min-width: 12px;
+            height: 12px;
+            background: url(images/error-icon.svg) center no-repeat;
+          }
+        }
+      }
+
     &__input {
       display: flex;
       width: 91px;
@@ -209,8 +230,9 @@
       &.filled {
         border: 1px solid #7B3306;
       }
+     }
     }
-  }
+  
 
   &__arrow {
     display: flex;
@@ -241,3 +263,7 @@
   display: flex;
 }
 
+
+span.error {
+  display: none;
+}

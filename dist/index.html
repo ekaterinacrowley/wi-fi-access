@@ -7,8 +7,68 @@
   <link rel="stylesheet" href="styles.css">
 </head> 
 <body>
-  <!-- <include src="form.html"></include> -->
-  <header>
+  <div class="form-container">
+    <div class="form__wrapper">
+<div class="form">
+    <div class="form__header form__header--default">
+        <h1 class="form__title" data-i18n="form.title.default">Free Wi-Fi Access</h1>
+        <div class="form__text" data-i18n="form.text.default">Complete a quick registration to connect to the internet</div>
+    </div>
+     <div class="form__header form__header--code">
+        <h1 class="form__title" data-i18n="form.title.code">Check your email</h1>
+        <div class="form__text"><span data-i18n="form.text.code1">We've sent a one-time code to</span> <span class="entered-email">trtr23@gmail.com</span><span data-i18n="form.text.code2">. Please enter the code below to get access to free Wi-Fi.</span></div>
+    </div>
+    <form class="form__form form__form--default" id="wifiForm" novalidate="">
+      <div class="form__field">
+        <label for="email" data-i18n="form.email">Email Address</label>
+        <input type="email" id="email" name="email" placeholder="email@example.com" required="">
+        <span class="error" data-error="email"></span>
+      </div>
+
+      <div class="form__field">
+        <label for="birthdate" data-i18n="form.birthdate">Date of birth</label>
+        <input type="text" id="birthdate" name="birthdate" placeholder="DD / MM / YYYY" maxlength="14" inputmode="numeric" required="">
+        <span class="error" data-error="birthdate"></span>
+      </div>
+
+      <button type="submit" class="form__btn"><span data-i18n="form.btn.default">Connect to Wi-Fi</span></button>
+
+    </form>
+ <form class="form__form form__form--code" id="wifiFormCode" novalidate="">
+  <div class="code">
+    <input type="text" class="code__input filled">
+    <input type="text" class="code__input">
+    <input type="text" class="code__input">
+    <input type="text" class="code__input">
+  </div>
+  <span class="error" data-error="code"></span>
+  <button type="submit" class="form__btn" disabled=""><span data-i18n="form.btn.code">Confirm</span></button>
+ </form>
+    <div class="form__footer">
+    <div class="form__note form__note--default" data-i18n="form.note.default">
+        You have 5 minutes of free internet access. Confirm you are 18+, accept our terms, and verify your email to continue.
+    </div>
+    <a class="form__note form__note--code resend">
+      <div class="form__arrow">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M15.5105 5.46967C15.8298 5.76256 15.8298 6.23744 15.5105 6.53033L10.125 11.4697C9.80565 11.7626 9.80565 12.2374 10.125 12.5303L15.5105 17.4697C15.8298 17.7626 15.8298 18.2374 15.5105 18.5303C15.1911 18.8232 14.6734 18.8232 14.354 18.5303L8.96854 13.591C8.01049 12.7123 8.01049 11.2877 8.96853 10.409L14.354 5.46967C14.6734 5.17678 15.1911 5.17678 15.5105 5.46967Z" fill="#7B3306"></path>
+        </svg>
+      </div>
+        <div class="form__note-content">
+          <b data-i18n="form.resend.title">Resend email</b>
+          <span data-i18n="form.resend.text">The code is valid for 10 minutes</span>
+        </div>
+      </a>
+    <div class="lang-switcher">
+        <button class="lang-switcher__btn lang-switcher__btn--en lang-switcher__btn--active">EN</button>
+        <button class="lang-switcher__btn lang-switcher__btn--ar">العربية</button>
+    </div>
+  </div>
+</div>
+</div>
+  </div>
+  <div class="success-container" style="display: none;">
+    <header>
     <div class="header main-width">
         <div class="header__logo" data-i18n="header.logo">Local Café</div>
         <div class="header__label">
@@ -26,7 +86,7 @@
             <span data-i18n="header.label">Free Wi-Fi Connected</span>
         </div>
             <div class="lang-switcher">
-                <button class="lang-switcher__btn lang-switcher__btn--en lang-switcher__btn--active">EN</button>
+                <button class="lang-switcher__btn lang-switcher__btn--en">EN</button>
                 <button class="lang-switcher__btn lang-switcher__btn--ar">العربية</button>
             </div>
         </div>
@@ -105,7 +165,7 @@ for VIP members</div>
         <div class="footer__text" data-i18n="footer.text">Enjoy your free Wi-Fi connection and explore our selection.</div>
     </div>
 </footer>
-  <div class="popup-wrapper">
+<div class="popup-wrapper">
     <div class="popup">
         <div class="popup__image">
             <img src="images/popup-img.webp">
@@ -118,7 +178,8 @@ for VIP members</div>
         <a class="popup__btn btn" data-i18n="popup.btn">CLAIM MY BONUS NOW</a>
     </div>
 </div>
+  </div>
   <script src="main.js"></script> 
-</body> 
+</body>  
 </html> 
-   
+     

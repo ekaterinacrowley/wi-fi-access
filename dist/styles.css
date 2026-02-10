@@ -400,6 +400,21 @@ h3 {
   gap: 12px;
   align-self: stretch;
 }
+.form .code.error + span.error {
+  display: flex !important;
+  align-items: flex-start;
+  gap: 4px;
+  color: #FB2C36;
+  font-size: 12px;
+}
+.form .code.error + span.error:before {
+  content: "";
+  display: block;
+  width: 12px;
+  min-width: 12px;
+  height: 12px;
+  background: url(images/error-icon.svg) center no-repeat;
+}
 .form .code__input {
   display: flex;
   width: 91px;
@@ -447,6 +462,10 @@ h3 {
 .form.is-code .form__form--code,
 .form.is-code .form__note--code {
   display: flex;
+}
+
+span.error {
+  display: none;
 }
 
 header {
@@ -919,6 +938,19 @@ footer .footer__text {
   opacity: 1;
   transform: translateY(0);
   transition: 0.6s ease 0.45s;
+}
+
+html[dir=rtl] header .header .lang-switcher {
+  margin-left: 0;
+  margin-right: auto;
+}
+html[dir=rtl] .banner {
+  background: url(images/banner-bg-rtl.webp) right center no-repeat;
+  background-size: cover;
+}
+html[dir=rtl] .banner__image {
+  right: auto;
+  left: 0;
 }
 
 .popup-wrapper {

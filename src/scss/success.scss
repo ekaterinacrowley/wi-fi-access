@@ -480,3 +480,21 @@ footer {
     transform: translateY(0);
     transition: 0.6s ease 0.45s;
 }
+
+
+html[dir="rtl"] {
+    header .header .lang-switcher {
+        margin-left: 0;
+        margin-right: auto;
+    }
+    .banner {
+        background: url(images/banner-bg-rtl.webp) right center no-repeat;
+        background-size: cover;
+
+    }
+    .banner__image {
+        right: auto;
+        left: 0;
+    }
+
+}

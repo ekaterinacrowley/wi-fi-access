@@ -1,3 +1,4 @@
+import 'dotenv/config.js'
 import express from 'express'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -21,4 +22,13 @@ app.get('*', (_, res) => {
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`)
+  
+  // Debug: проверяем переменные окружения
+  console.log('\n📧 SMTP Configuration:')
+  console.log(`  SMTP_HOST: ${process.env.SMTP_HOST || 'NOT SET'}`)
+  console.log(`  SMTP_PORT: ${process.env.SMTP_PORT || 'NOT SET'}`)
+  console.log(`  SMTP_USER: ${process.env.SMTP_USER ? '✓ SET' : 'NOT SET'}`)
+  console.log(`  SMTP_PASS: ${process.env.SMTP_PASS ? '✓ SET' : 'NOT SET'}`)
+  console.log(`  SMTP_FROM: ${process.env.SMTP_FROM || 'NOT SET'}`)
+  console.log('')
 })
