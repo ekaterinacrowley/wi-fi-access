@@ -134,11 +134,11 @@ function updateLangSwitcherButtons(lang) {
   document.querySelectorAll('.lang-switcher__btn').forEach(btn => {
     btn.classList.remove('lang-switcher__btn--active')
   })
-  
+   
   if (lang === 'en') {
-    document.querySelector('.lang-switcher__btn--en')?.classList.add('lang-switcher__btn--active')
+    document.querySelectorAll('.lang-switcher__btn--en').forEach(btn => btn.classList.add('lang-switcher__btn--active'))
   } else if (lang === 'ar') {
-    document.querySelector('.lang-switcher__btn--ar')?.classList.add('lang-switcher__btn--active')
+    document.querySelectorAll('.lang-switcher__btn--ar').forEach(btn => btn.classList.add('lang-switcher__btn--active'))
   }
 }
 
@@ -154,13 +154,92 @@ function initLanguageSwitcher() {
   })
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+/* ---------- Access Status (Server-backed) ---------- */
+async function checkAccessStatus(email) {
+  try {
+    const res = await fetch(`/api/access-status?email=${encodeURIComponent(email)}`)
+    if (!res.ok) throw new Error('Failed to check access')
+    const data = await res.json()
+    return data // { access: 'none' | 'temporary' | 'permanent', expiresAt?: number }
+  } catch (err) {
+    console.error('Access status check failed:', err)
+    return { access: 'none' }
+  }
+}
+
+async function grantPermanentAccess(email) {
+  try {
+    const res = await fetch('/api/grant-permanent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    })
+    if (!res.ok) throw new Error('Failed to grant permanent access')
+    const data = await res.json()
+    console.log('✓ Permanent access granted:', data)
+    return data.success
+  } catch (err) {
+    console.error('Failed to grant permanent access:', err)
+    return false
+  }
+}
+
+/* ---------- Temporary Wi-Fi Access (5 minutes) ---------- */
+function grantTemporaryWiFiAccess() {
+  // Check if user already has active access
+  const existingAccess = parseInt(localStorage.getItem('wifi_access_until') || '0')
+  if (existingAccess > Date.now()) {
+    console.log('✓ Active Wi-Fi access found, expires in', Math.ceil((existingAccess - Date.now()) / 1000), 'seconds')
+    return
+  }
+
+  // Grant 5 minutes of access
+  const expireTime = Date.now() + 5 * 60 * 1000 // 5 minutes
+  localStorage.setItem('wifi_access_until', expireTime)
+  console.log('✓ 5-minute Wi-Fi access granted, expires at', new Date(expireTime).toLocaleTimeString())
+}
+
+function startAccessTimer() {
+  const updateTimer = () => {
+    const expireTime = parseInt(localStorage.getItem('wifi_access_until') || '0')
+    const now = Date.now()
+    const remaining = Math.max(0, expireTime - now)
+
+    if (remaining > 0) {
+      const mins = Math.floor(remaining / 60000)
+      const secs = Math.floor((remaining % 60000) / 1000)
+      console.log(`⏱ Wi-Fi access expires in: ${mins}:${secs.toString().padStart(2, '0')}`)
+      setTimeout(updateTimer, 1000)
+    } else {
+      console.log('⏱ Wi-Fi access expired')
+      localStorage.removeItem('wifi_access_until')
+    }
+  }
+  updateTimer()
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  /* Grant temporary Wi-Fi access */
+  grantTemporaryWiFiAccess()
+  startAccessTimer()
+  
   /* Initialize language after DOM is ready */
   const currentLang = getCurrentLanguage()
   
   initLanguageSwitcher()
   updatePageLanguage(currentLang)
   updateLangSwitcherButtons(currentLang)
+  
+  /* Check if user already has access (from previous login) */
+  const savedEmail = localStorage.getItem('last_verified_email')
+  if (savedEmail) {
+    const accessStatus = await checkAccessStatus(savedEmail)
+    if (accessStatus.access === 'temporary' || accessStatus.access === 'permanent') {
+      console.log(`✓ Found existing ${accessStatus.access} access for ${savedEmail}`)
+      showSuccessPage()
+      return
+    }
+  }
   
   /* ---------- Elements ---------- */
   const formWrapper = document.querySelector('.form')
@@ -261,7 +340,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (banner) {
       setTimeout(() => {
         banner.classList.add('is-loaded')
-      }, 2000)
+      }, 200)
     }
     
     if (popupWrapper) {
@@ -493,6 +572,7 @@ document.addEventListener('DOMContentLoaded', () => {
         body: JSON.stringify({
           email: currentEmail,
           code: getEnteredCode(),
+          birthdate: currentBirthdate,
           lang: getCurrentLanguage()
         })
       })
@@ -513,11 +593,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ---------- Confirm submit ---------- */
   if (codeForm) {
-    codeForm.addEventListener('submit', e => {
+    codeForm.addEventListener('submit', async e => {
       e.preventDefault()
       if (!confirmBtn || confirmBtn.disabled) return
 
+      // Save verified email to localStorage
+      localStorage.setItem('last_verified_email', currentEmail)
+      
       console.log('Email verified → grant Wi-Fi access')
+      
+      // Optionally, grant permanent access (can be toggled based on user preference)
+      // await grantPermanentAccess(currentEmail)
+      
       showSuccessPage()
     })
   }

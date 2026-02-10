@@ -127,9 +127,9 @@
       btn.classList.remove("lang-switcher__btn--active");
     });
     if (lang === "en") {
-      document.querySelector(".lang-switcher__btn--en")?.classList.add("lang-switcher__btn--active");
+      document.querySelectorAll(".lang-switcher__btn--en").forEach((btn) => btn.classList.add("lang-switcher__btn--active"));
     } else if (lang === "ar") {
-      document.querySelector(".lang-switcher__btn--ar")?.classList.add("lang-switcher__btn--active");
+      document.querySelectorAll(".lang-switcher__btn--ar").forEach((btn) => btn.classList.add("lang-switcher__btn--active"));
     }
   }
   function initLanguageSwitcher() {
@@ -142,11 +142,61 @@
       });
     });
   }
-  document.addEventListener("DOMContentLoaded", () => {
+  async function checkAccessStatus(email) {
+    try {
+      const res = await fetch(`/api/access-status?email=${encodeURIComponent(email)}`);
+      if (!res.ok)
+        throw new Error("Failed to check access");
+      const data = await res.json();
+      return data;
+    } catch (err) {
+      console.error("Access status check failed:", err);
+      return { access: "none" };
+    }
+  }
+  function grantTemporaryWiFiAccess() {
+    const existingAccess = parseInt(localStorage.getItem("wifi_access_until") || "0");
+    if (existingAccess > Date.now()) {
+      console.log("\u2713 Active Wi-Fi access found, expires in", Math.ceil((existingAccess - Date.now()) / 1e3), "seconds");
+      return;
+    }
+    const expireTime = Date.now() + 5 * 60 * 1e3;
+    localStorage.setItem("wifi_access_until", expireTime);
+    console.log("\u2713 5-minute Wi-Fi access granted, expires at", new Date(expireTime).toLocaleTimeString());
+  }
+  function startAccessTimer() {
+    const updateTimer = () => {
+      const expireTime = parseInt(localStorage.getItem("wifi_access_until") || "0");
+      const now = Date.now();
+      const remaining = Math.max(0, expireTime - now);
+      if (remaining > 0) {
+        const mins = Math.floor(remaining / 6e4);
+        const secs = Math.floor(remaining % 6e4 / 1e3);
+        console.log(`\u23F1 Wi-Fi access expires in: ${mins}:${secs.toString().padStart(2, "0")}`);
+        setTimeout(updateTimer, 1e3);
+      } else {
+        console.log("\u23F1 Wi-Fi access expired");
+        localStorage.removeItem("wifi_access_until");
+      }
+    };
+    updateTimer();
+  }
+  document.addEventListener("DOMContentLoaded", async () => {
+    grantTemporaryWiFiAccess();
+    startAccessTimer();
     const currentLang = getCurrentLanguage();
     initLanguageSwitcher();
     updatePageLanguage(currentLang);
     updateLangSwitcherButtons(currentLang);
+    const savedEmail = localStorage.getItem("last_verified_email");
+    if (savedEmail) {
+      const accessStatus = await checkAccessStatus(savedEmail);
+      if (accessStatus.access === "temporary" || accessStatus.access === "permanent") {
+        console.log(`\u2713 Found existing ${accessStatus.access} access for ${savedEmail}`);
+        showSuccessPage();
+        return;
+      }
+    }
     const formWrapper = document.querySelector(".form");
     const defaultForm = document.getElementById("wifiForm");
     const emailInput = document.getElementById("email");
@@ -221,7 +271,7 @@
       if (banner) {
         setTimeout(() => {
           banner.classList.add("is-loaded");
-        }, 2e3);
+        }, 200);
       }
       if (popupWrapper) {
         setTimeout(() => {
@@ -405,6 +455,7 @@
           body: JSON.stringify({
             email: currentEmail,
             code: getEnteredCode(),
+            birthdate: currentBirthdate,
             lang: getCurrentLanguage()
           })
         });
@@ -422,10 +473,11 @@
       }
     }
     if (codeForm) {
-      codeForm.addEventListener("submit", (e) => {
+      codeForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         if (!confirmBtn || confirmBtn.disabled)
           return;
+        localStorage.setItem("last_verified_email", currentEmail);
         console.log("Email verified \u2192 grant Wi-Fi access");
         showSuccessPage();
       });

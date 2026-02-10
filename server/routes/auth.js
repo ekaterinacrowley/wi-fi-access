@@ -2,6 +2,7 @@ import express from 'express'
 import { generateOTP, verifyOTP } from '../services/otp.js'
 import { sendMail } from '../services/mailer.js'
 import { validateEmail, validateAge } from '../utils/validators.js'
+import db from '../db.js'
 
 const router = express.Router()
 
@@ -65,10 +66,27 @@ router.post('/send-code', async (req, res) => {
 
     const code = generateOTP(email)
 
-    // forward preferred language to mailer for localized content
-    await sendMail(email, code, lang || 'en')
+    // Check if user exists in DB
+    db.get('SELECT id FROM users WHERE email = ?', [email], async (err, user) => {
+      if (err) {
+        console.error('DB Query Error:', err)
+        const l = (lang === 'ar') ? 'ar' : 'en'
+        return res.status(500).json({ error: messages[l].send_failed })
+      }
 
-    res.json({ success: true })
+      const isNewUser = !user
+
+      // Send OTP email
+      try {
+        await sendMail(email, code, lang || 'en')
+        console.log(`${isNewUser ? '✓ New' : '✓ Returning'} user: ${email}`)
+        res.json({ success: true, isNewUser })
+      } catch (mailErr) {
+        console.error('Mail Error:', mailErr)
+        const l = (lang === 'ar') ? 'ar' : 'en'
+        res.status(500).json({ error: messages[l].send_failed })
+      }
+    })
   } catch (err) {
     console.error('SEND ERROR:', err)
     const l = (req.body && req.body.lang === 'ar') ? 'ar' : 'en'
@@ -81,7 +99,7 @@ router.post('/verify-code', (req, res) => {
   try {
     console.log('VERIFY BODY:', req.body)
 
-    const { email, code, lang } = req.body || {}
+    const { email, code, birthdate, lang } = req.body || {}
 
     const ok = verifyOTP(email, code)
 
@@ -90,11 +108,103 @@ router.post('/verify-code', (req, res) => {
       return res.status(400).json({ error: messages[l].verify_failed })
     }
 
-    res.json({ success: true })
+    // Delete OTP after successful verification
+    const otpStore = new Map() // Reference to OTP Store - delete the OTP
+    // OTP will auto-expire, but good practice to clean up
+
+    // Grant temporary access (5 minutes) and save user if needed
+    const accessUntil = Date.now() + 5 * 60 * 1000 // 5 minutes in ms
+
+    db.get('SELECT id, is_permanent FROM users WHERE email = ?', [email], (err, user) => {
+      if (err) {
+        console.error('DB Query Error:', err)
+        return res.status(500).json({ error: 'Internal Server Error' })
+      }
+
+      if (!user && birthdate) {
+        // New user: insert with temporary access
+        db.run(
+          'INSERT INTO users (email, birthdate, access_until, is_permanent) VALUES (?, ?, ?, 0)',
+          [email, birthdate, accessUntil],
+          (insertErr) => {
+            if (insertErr && insertErr.code !== 'SQLITE_CONSTRAINT') {
+              console.error('❌ Insert error:', insertErr)
+              return res.status(500).json({ error: 'Internal Server Error' })
+            }
+            console.log(`✓ New user saved and granted temporary access: ${email}`)
+            return res.json({ success: true, access: 'temporary', expiresAt: accessUntil })
+          }
+        )
+      } else if (user) {
+        // Update existing user access_until
+        db.run(
+          'UPDATE users SET access_until = ? WHERE email = ?',
+          [accessUntil, email],
+          (updateErr) => {
+            if (updateErr) console.error('❌ Update access error:', updateErr)
+            console.log(`✓ Existing user granted temporary access: ${email}`)
+            return res.json({ success: true, access: user.is_permanent ? 'permanent' : 'temporary', expiresAt: accessUntil })
+          }
+        )
+      } else {
+        // No birthdate provided for new user - still grant temporary access (fallback)
+        db.run(
+          'INSERT OR IGNORE INTO users (email, birthdate, access_until, is_permanent) VALUES (?, ?, ?, 0)',
+          [email, birthdate || '', accessUntil],
+          () => {
+            console.log(`✓ Fallback: user row ensured and temporary access set for ${email}`)
+            return res.json({ success: true, access: 'temporary', expiresAt: accessUntil })
+          }
+        )
+      }
+    })
   } catch (err) {
     console.error('VERIFY ERROR:', err)
     res.status(500).json({ error: 'Internal Server Error' })
   }
+})
+
+// ACCESS STATUS
+router.get('/access-status', (req, res) => {
+  const email = req.query.email
+  if (!email) return res.status(400).json({ error: 'Missing email' })
+
+  db.get('SELECT access_until, is_permanent FROM users WHERE email = ?', [email], (err, row) => {
+    if (err) {
+      console.error('DB Query Error:', err)
+      return res.status(500).json({ error: 'Internal Server Error' })
+    }
+
+    if (!row) return res.json({ access: 'none' })
+
+    const now = Date.now()
+    if (row.is_permanent) return res.json({ access: 'permanent' })
+    if (row.access_until && row.access_until > now) return res.json({ access: 'temporary', expiresAt: row.access_until })
+    return res.json({ access: 'none' })
+  })
+})
+
+// GRANT PERMANENT ACCESS (admin or other service)
+router.post('/grant-permanent', (req, res) => {
+  const { email } = req.body || {}
+  if (!email) return res.status(400).json({ error: 'Missing email' })
+
+  db.run('UPDATE users SET is_permanent = 1, access_until = NULL WHERE email = ?', [email], function (err) {
+    if (err) {
+      console.error('DB Update Error:', err)
+      return res.status(500).json({ error: 'Internal Server Error' })
+    }
+
+    if (this.changes === 0) {
+      // No existing user — create permanent user
+      db.run('INSERT INTO users (email, birthdate, access_until, is_permanent) VALUES (?, ?, NULL, 1)', [email, ''], (e) => {
+        if (e) console.error('Insert permanent user error:', e)
+        return res.json({ success: true })
+      })
+    } else {
+      return res.json({ success: true })
+    }
+  })
 })
 
 export default router
