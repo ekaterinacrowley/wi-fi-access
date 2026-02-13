@@ -6,6 +6,14 @@ import db from '../db.js'
 
 const router = express.Router()
 
+// Get WiFi credentials from env
+function getWiFiCredentials() {
+  return {
+    ssid: process.env.WIFI_SSID || 'Local WiFi',
+    password: process.env.WIFI_PASSWORD || 'password123'
+  }
+}
+
 const messages = {
   en: {
     invalid_email: 'Invalid email address',
@@ -132,7 +140,8 @@ router.post('/verify-code', (req, res) => {
               return res.status(500).json({ error: 'Internal Server Error' })
             }
             console.log(`✓ New user saved and granted temporary access: ${email}`)
-            return res.json({ success: true, access: 'temporary', expiresAt: accessUntil })
+            const wifi = getWiFiCredentials()
+            return res.json({ success: true, access: 'temporary', expiresAt: accessUntil, wifi })
           }
         )
       } else if (user) {
@@ -143,7 +152,9 @@ router.post('/verify-code', (req, res) => {
           (updateErr) => {
             if (updateErr) console.error('❌ Update access error:', updateErr)
             console.log(`✓ Existing user granted temporary access: ${email}`)
-            return res.json({ success: true, access: user.is_permanent ? 'permanent' : 'temporary', expiresAt: accessUntil })
+            const wifi = getWiFiCredentials()
+            const accessType = user.is_permanent ? 'permanent' : 'temporary'
+            return res.json({ success: true, access: accessType, expiresAt: accessType === 'temporary' ? accessUntil : null, wifi })
           }
         )
       } else {
@@ -153,7 +164,8 @@ router.post('/verify-code', (req, res) => {
           [email, birthdate || '', accessUntil],
           () => {
             console.log(`✓ Fallback: user row ensured and temporary access set for ${email}`)
-            return res.json({ success: true, access: 'temporary', expiresAt: accessUntil })
+            const wifi = getWiFiCredentials()
+            return res.json({ success: true, access: 'temporary', expiresAt: accessUntil, wifi })
           }
         )
       }
@@ -178,8 +190,10 @@ router.get('/access-status', (req, res) => {
     if (!row) return res.json({ access: 'none' })
 
     const now = Date.now()
-    if (row.is_permanent) return res.json({ access: 'permanent' })
-    if (row.access_until && row.access_until > now) return res.json({ access: 'temporary', expiresAt: row.access_until })
+    const wifi = getWiFiCredentials()
+    
+    if (row.is_permanent) return res.json({ access: 'permanent', wifi })
+    if (row.access_until && row.access_until > now) return res.json({ access: 'temporary', expiresAt: row.access_until, wifi })
     return res.json({ access: 'none' })
   })
 })

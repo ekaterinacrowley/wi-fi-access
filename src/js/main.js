@@ -1,3 +1,10 @@
+import Swiper from 'swiper'
+import { Pagination, Navigation, EffectFade } from 'swiper/modules'
+import 'swiper/css'
+import 'swiper/css/pagination'
+import 'swiper/css/navigation'
+import 'swiper/css/effect-fade'
+
 /* ---------- Localization ---------- */
 const translations = {
   en: {
@@ -33,17 +40,21 @@ const translations = {
     'error.send_failed': 'Failed to send email. Please try again.',
     'error.verify_failed': "It looks like the numbers you entered don't match our records. Please double-check and try again.",
     'email.subject': 'Your Wi-Fi Access Code',
-    'email.body': 'Your one-time code: {code} — valid for 10 minutes.',
+    'email.body': 'Your one-time code: {code} — valid for 5 minutes.',
     'form.email': 'Email Address',
     'form.birthdate': 'Date of birth',
     'form.note.default': 'You have 5 minutes of free internet access. Confirm you are 18+, accept our terms, and verify your email to continue.',
     'form.note.code': 'Resend email',
     'form.resend.title': 'Resend email',
-    'form.resend.text': 'The code is valid for 10 minutes',
+    'form.resend.text': 'The code is valid for 5 minutes',
     'popup.title': 'Exclusive welcome offer!',
     'popup.label': 'GET 100% BONUS UP TO $100',
     'popup.text': 'Limited time offer for new users! Don\'t miss out on this amazing deal.',
-    'popup.btn': 'CLAIM MY BONUS NOW'
+    'popup.btn': 'CLAIM MY BONUS NOW',
+    'wifi.title': 'Your Wi-Fi Connection Details',
+    'wifi.ssid': 'Network Name (SSID)',
+    'wifi.password': 'Password',
+    'wifi.copy': 'Copy'
   },
   ar: {
     'header.logo': 'Local Café',
@@ -78,17 +89,21 @@ const translations = {
     'error.send_failed': 'فشل إرسال البريد الإلكتروني. حاول مرة أخرى.',
     'error.verify_failed': 'الرمز غير صحيح. يرجى المحاولة مرة أخرى.',
     'email.subject': 'رمز الوصول إلى Wi-Fi',
-    'email.body': 'الرمز لمرة واحدة: {code} — صالح لمدة 10 دقائق.',
+    'email.body': 'الرمز لمرة واحدة: {code} — صالح لمدة 5 دقائق.',
     'form.email': 'عنوان البريد الإلكتروني',
     'form.birthdate': 'تاريخ الميلاد',
     'form.note.default': 'لديك 5 دقائق من الوصول المجاني للإنترنت. تأكد أنك تبلغ 18 سنة أو أكثر واقبل شروطنا وتحقق من بريدك الإلكتروني للمتابعة.',
     'form.note.code': 'إعادة إرسال البريد الإلكتروني',
     'form.resend.title': 'إعادة إرسال البريد الإلكتروني',
-    'form.resend.text': 'الرمز صالح لمدة 10 دقائق',
+    'form.resend.text': 'الرمز صالح لمدة 5 دقائق',
     'popup.title': 'عرض ترحيب حصري!',
     'popup.label': 'احصل على 100٪ مكافأة حتى $100',
     'popup.text': 'عرض محدود الوقت للمستخدمين الجدد! لا تفوت هذا العرض الرائع.',
-    'popup.btn': 'اطلب مكافأتي الآن'
+    'popup.btn': 'اطلب مكافأتي الآن',
+    'wifi.title': 'تفاصيل اتصال Wi-Fi الخاص بك',
+    'wifi.ssid': 'اسم الشبكة (SSID)',
+    'wifi.password': 'كلمة المرور',
+    'wifi.copy': 'نسخ'
   }
 }
 
@@ -208,7 +223,7 @@ function startAccessTimer() {
     if (remaining > 0) {
       const mins = Math.floor(remaining / 60000)
       const secs = Math.floor((remaining % 60000) / 1000)
-      console.log(`⏱ Wi-Fi access expires in: ${mins}:${secs.toString().padStart(2, '0')}`)
+      // console.log(`⏱ Wi-Fi access expires in: ${mins}:${secs.toString().padStart(2, '0')}`)
       setTimeout(updateTimer, 1000)
     } else {
       console.log('⏱ Wi-Fi access expired')
@@ -229,6 +244,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   initLanguageSwitcher()
   updatePageLanguage(currentLang)
   updateLangSwitcherButtons(currentLang)
+  
+  /* Initialize Swiper if banner is visible */
+  initBannerSwiper()
   
   /* Check if user already has access (from previous login) */
   const savedEmail = localStorage.getItem('last_verified_email')
@@ -317,6 +335,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function showSuccessPage() {
+    console.log('showSuccessPage called')
     const formContainer = document.querySelector('.form-container')
     const successContainer = document.querySelector('.success-container')
     
@@ -329,6 +348,38 @@ document.addEventListener('DOMContentLoaded', async () => {
       updatePageLanguage(getCurrentLanguage())
       updateLangSwitcherButtons(getCurrentLanguage())
       initSuccessPage()
+      // Re-init swiper if needed
+      setTimeout(() => initBannerSwiper(), 100)
+    }
+  }
+ 
+ 
+  function initBannerSwiper() {
+    const swiperEl = document.querySelector('.banner .swiper')
+    const successContainer = document.querySelector('.success-container')
+    if (swiperEl && successContainer && successContainer.style.display === 'block') {
+      console.log('Initializing banner Swiper')
+      const bannerSwiper = new Swiper('.banner .swiper', {
+        modules: [Pagination, Navigation, EffectFade],
+        effect: 'fade',
+        fadeEffect: {
+          crossFade: true,
+        },
+        slidesPerView: 1,
+        spaceBetween: 0,
+        pagination: {
+          el: '.banner .swiper-pagination',
+          clickable: true, 
+        },
+        autoplay: {
+          delay: 5000,
+          disableOnInteraction: false,
+        },
+        loop: true,
+      })
+      console.log('Banner Swiper initialized:', bannerSwiper)
+    } else {
+      console.log('Banner swiper element not found or not visible')
     }
   }
  
@@ -336,6 +387,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const banner = document.querySelector('.banner')
     const popupWrapper = document.querySelector('.popup-wrapper')
     const popup = document.querySelector('.popup')
+    
+    console.log('initSuccessPage called')
+    console.log('banner element:', banner)
+    const swiperEl = document.querySelector('.swiper')
+    console.log('swiper element:', swiperEl)
     
     if (banner) {
       setTimeout(() => {
@@ -579,8 +635,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (!res.ok) throw new Error()
 
+      console.log('Code verified successfully')
       if (confirmBtn) {
         confirmBtn.disabled = false
+        console.log('Confirm button enabled')
       }
     } catch {
       showCodeError()
@@ -595,7 +653,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (codeForm) {
     codeForm.addEventListener('submit', async e => {
       e.preventDefault()
-      if (!confirmBtn || confirmBtn.disabled) return
+      console.log('Code form submitted')
+      if (!confirmBtn || confirmBtn.disabled) {
+        console.log('Confirm button disabled or not found')
+        return
+      }
 
       // Save verified email to localStorage
       localStorage.setItem('last_verified_email', currentEmail)
@@ -630,7 +692,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             setFieldState(emailInput, emailError, 'error', data.error || translations[getCurrentLanguage()]['error.send_failed'])
           }
           return
-        }
+        } 
 
         // Возвращаемся к форме ввода почты
         showDefaultState()

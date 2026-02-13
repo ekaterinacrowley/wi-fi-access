@@ -12,7 +12,8 @@
 
 .form {
   display: flex;
-  width: 440px;
+  width: 90vw;
+  max-width: 440px;
   padding: 20px;
   flex-direction: column;
   align-items: flex-start;
@@ -168,6 +169,10 @@
     border-radius: 12px;
     background: #EBE5DE;
     color: rgba(68, 64, 59, 0.30);
+
+     @media (max-width: 767px) {
+      font-size: 11px;
+    }
   }
 
   &__note-content {
@@ -226,6 +231,12 @@
       font-style: normal;
       font-weight: 400;
       line-height: normal;
+
+       @media (max-width: 767px) {
+        width: 69px;
+        height: 69px;
+        font-size: 24px;
+      }
 
       &.filled {
         border: 1px solid #7B3306;
