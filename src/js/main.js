@@ -107,6 +107,147 @@ const translations = {
   }
 }
 
+/* ---------- Device Fingerprinting ---------- */
+async function generateDeviceFingerprint() {
+  try {
+    // Collect device information
+    const screenData = `${window.screen.width}x${window.screen.height}x${window.screen.colorDepth}`;
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const language = navigator.language;
+    const platform = navigator.platform;
+    const userAgent = navigator.userAgent;
+    
+    // Check for available plugins (limited for privacy)
+    const plugins = Array.from(navigator.plugins || []).map(p => p.name).join(',');
+    
+    // Create fingerprint string
+    const fingerprintData = [
+      screenData,
+      timezone,
+      language,
+      platform,
+      userAgent,
+      plugins
+    ].join('###');
+    
+    // Generate hash using Web Crypto API
+    const msgUint8 = new TextEncoder().encode(fingerprintData);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    
+    return hashHex;
+  } catch (error) {
+    console.error('Error generating fingerprint:', error);
+    // Fallback to simpler fingerprint if Web Crypto fails
+    return generateSimpleFingerprint();
+  }
+}
+
+function generateSimpleFingerprint() {
+  const screenData = `${window.screen.width}x${window.screen.height}`;
+  const timestamp = new Date().getTimezoneOffset();
+  const userAgent = navigator.userAgent;
+  return btoa(`${screenData}-${timestamp}-${userAgent}`).substring(0, 32);
+}
+
+/* ---------- Device Access Management ---------- */
+const DEVICE_STORAGE_KEY = 'wifi_device_id';
+const DEVICE_ACCESS_KEY = 'wifi_device_approved';
+const DEVICE_ACCESS_EXPIRY = 'wifi_device_expiry';
+
+async function getOrCreateDeviceId() {
+  let deviceId = localStorage.getItem(DEVICE_STORAGE_KEY);
+  
+  if (!deviceId) {
+    deviceId = await generateDeviceFingerprint();
+    localStorage.setItem(DEVICE_STORAGE_KEY, deviceId);
+  }
+  
+  return deviceId;
+}
+
+function setDeviceApproved(email, expiryTime = null) {
+  // Default expiry: 30 days if not specified
+  const expiry = expiryTime || Date.now() + (30 * 24 * 60 * 60 * 1000);
+  
+  localStorage.setItem(DEVICE_ACCESS_KEY, 'true');
+  localStorage.setItem(DEVICE_ACCESS_EXPIRY, expiry.toString());
+  localStorage.setItem('last_verified_email', email);
+  
+  console.log('✓ Device approved and remembered');
+}
+
+function isDeviceApproved() {
+  const isApproved = localStorage.getItem(DEVICE_ACCESS_KEY) === 'true';
+  const expiry = parseInt(localStorage.getItem(DEVICE_ACCESS_EXPIRY) || '0');
+  
+  if (!isApproved) return false;
+  
+  // Check if approval hasn't expired
+  if (expiry < Date.now()) {
+    console.log('Device approval expired');
+    clearDeviceApproval();
+    return false;
+  }
+  
+  return true;
+}
+
+function clearDeviceApproval() {
+  localStorage.removeItem(DEVICE_ACCESS_KEY);
+  localStorage.removeItem(DEVICE_ACCESS_EXPIRY);
+  // Don't remove device ID, we want to keep it for future logins
+}
+
+async function checkDeviceWithServer(email) {
+  try {
+    const deviceId = await getOrCreateDeviceId();
+    
+    const res = await fetch('/api/check-device', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        email, 
+        deviceId,
+        timestamp: Date.now()
+      })
+    });
+    
+    if (!res.ok) return false;
+    
+    const data = await res.json();
+    return data.approved || false;
+  } catch (err) {
+    console.error('Device check failed:', err);
+    return false;
+  }
+}
+
+async function registerDeviceWithServer(email) {
+  try {
+    const deviceId = await getOrCreateDeviceId();
+    
+    const res = await fetch('/api/register-device', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        email, 
+        deviceId,
+        timestamp: Date.now()
+      })
+    });
+    
+    if (!res.ok) throw new Error('Failed to register device');
+    
+    const data = await res.json();
+    return data.success || false;
+  } catch (err) {
+    console.error('Device registration failed:', err);
+    return false;
+  }
+}
+
 function getCurrentLanguage() {
   return localStorage.getItem('lang') || 'en'
 }
@@ -248,14 +389,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   /* Initialize Swiper if banner is visible */
   initBannerSwiper()
   
-  /* Check if user already has access (from previous login) */
+  /* Check if device is already approved */
   const savedEmail = localStorage.getItem('last_verified_email')
-  if (savedEmail) {
-    const accessStatus = await checkAccessStatus(savedEmail)
-    if (accessStatus.access === 'temporary' || accessStatus.access === 'permanent') {
-      console.log(`✓ Found existing ${accessStatus.access} access for ${savedEmail}`)
+  
+  if (savedEmail && isDeviceApproved()) {
+    // Device is approved locally, verify with server
+    const serverApproved = await checkDeviceWithServer(savedEmail)
+    if (serverApproved) {
+      console.log(`✓ Device already approved for ${savedEmail}`)
       showSuccessPage()
       return
+    } else {
+      // Server says device not approved, clear local approval
+      clearDeviceApproval()
     }
   }
   
@@ -659,13 +805,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         return
       }
 
-      // Save verified email to localStorage
-      localStorage.setItem('last_verified_email', currentEmail)
+      // Register device for future automatic login
+      await registerDeviceWithServer(currentEmail);
       
-      console.log('Email verified → grant Wi-Fi access')
+      // Save verified email to localStorage and mark device as approved
+      setDeviceApproved(currentEmail);
       
-      // Optionally, grant permanent access (can be toggled based on user preference)
-      // await grantPermanentAccess(currentEmail)
+      console.log('Email verified → grant Wi-Fi access, device remembered')
       
       showSuccessPage()
     })
@@ -704,7 +850,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           setFieldState(emailInput, emailError, 'error', translations[getCurrentLanguage()]['error.send_failed'])
         }
       }
-    })
+    }) 
   }
 })
 

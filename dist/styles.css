@@ -198,6 +198,10 @@ h3 {
   line-height: 20.8px;
   border-radius: 40px;
   padding: 0 25px;
+  transition: all 0.1s ease 0s;
+}
+.btn:hover {
+  transform: scale(1.02);
 }
 
 .lang-switcher {
@@ -533,7 +537,7 @@ header .header .lang-switcher {
   height: calc(100vh - 64px);
   background: url(../images/banner-bg.webp) center no-repeat;
   background-size: cover;
-  padding: 80px 0;
+  padding: 80px 0 0;
   position: relative;
 }
 @media (max-width: 767px) {
@@ -560,6 +564,12 @@ header .header .lang-switcher {
   opacity: 0 !important;
   width: 100%;
   transition: opacity 0.3s ease;
+  padding-bottom: 80px;
+}
+@media (max-width: 767px) {
+  .banner .swiper .swiper-slide {
+    padding-bottom: 20px;
+  }
 }
 .banner .swiper .swiper-slide-active {
   opacity: 1 !important;

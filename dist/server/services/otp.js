@@ -5,7 +5,7 @@ export function generateOTP(email) {
 
   store.set(email, {
     code,
-    expires: Date.now() + 10 * 60 * 1000 // 10 минут
+    expires: Date.now() + 5 * 60 * 1000 // 5 минут
   })
 
   console.log('OTP GENERATED:', email, code)

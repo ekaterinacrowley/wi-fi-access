@@ -54,7 +54,7 @@ header {
     height: calc(100vh - 64px);
     background: url(../images/banner-bg.webp) center no-repeat;
     background-size: cover;
-    padding: 80px 0;
+    padding: 80px 0 0;
     position: relative;
 
     @media (max-width: 767px) {
@@ -81,6 +81,11 @@ header {
             opacity: 0 !important;
             width: 100%;
             transition: opacity 0.3s ease;
+            padding-bottom: 80px;
+
+             @media (max-width: 767px) {
+                padding-bottom: 20px;
+             }
         }
 
         .swiper-slide-active {

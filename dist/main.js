@@ -5312,6 +5312,114 @@
       "wifi.copy": "\u0646\u0633\u062E"
     }
   };
+  async function generateDeviceFingerprint() {
+    try {
+      const screenData = `${window.screen.width}x${window.screen.height}x${window.screen.colorDepth}`;
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const language = navigator.language;
+      const platform = navigator.platform;
+      const userAgent = navigator.userAgent;
+      const plugins = Array.from(navigator.plugins || []).map((p) => p.name).join(",");
+      const fingerprintData = [
+        screenData,
+        timezone,
+        language,
+        platform,
+        userAgent,
+        plugins
+      ].join("###");
+      const msgUint8 = new TextEncoder().encode(fingerprintData);
+      const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+      return hashHex;
+    } catch (error) {
+      console.error("Error generating fingerprint:", error);
+      return generateSimpleFingerprint();
+    }
+  }
+  function generateSimpleFingerprint() {
+    const screenData = `${window.screen.width}x${window.screen.height}`;
+    const timestamp = (/* @__PURE__ */ new Date()).getTimezoneOffset();
+    const userAgent = navigator.userAgent;
+    return btoa(`${screenData}-${timestamp}-${userAgent}`).substring(0, 32);
+  }
+  var DEVICE_STORAGE_KEY = "wifi_device_id";
+  var DEVICE_ACCESS_KEY = "wifi_device_approved";
+  var DEVICE_ACCESS_EXPIRY = "wifi_device_expiry";
+  async function getOrCreateDeviceId() {
+    let deviceId = localStorage.getItem(DEVICE_STORAGE_KEY);
+    if (!deviceId) {
+      deviceId = await generateDeviceFingerprint();
+      localStorage.setItem(DEVICE_STORAGE_KEY, deviceId);
+    }
+    return deviceId;
+  }
+  function setDeviceApproved(email, expiryTime = null) {
+    const expiry = expiryTime || Date.now() + 30 * 24 * 60 * 60 * 1e3;
+    localStorage.setItem(DEVICE_ACCESS_KEY, "true");
+    localStorage.setItem(DEVICE_ACCESS_EXPIRY, expiry.toString());
+    localStorage.setItem("last_verified_email", email);
+    console.log("\u2713 Device approved and remembered");
+  }
+  function isDeviceApproved() {
+    const isApproved = localStorage.getItem(DEVICE_ACCESS_KEY) === "true";
+    const expiry = parseInt(localStorage.getItem(DEVICE_ACCESS_EXPIRY) || "0");
+    if (!isApproved)
+      return false;
+    if (expiry < Date.now()) {
+      console.log("Device approval expired");
+      clearDeviceApproval();
+      return false;
+    }
+    return true;
+  }
+  function clearDeviceApproval() {
+    localStorage.removeItem(DEVICE_ACCESS_KEY);
+    localStorage.removeItem(DEVICE_ACCESS_EXPIRY);
+  }
+  async function checkDeviceWithServer(email) {
+    try {
+      const deviceId = await getOrCreateDeviceId();
+      const res = await fetch("/api/check-device", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          deviceId,
+          timestamp: Date.now()
+        })
+      });
+      if (!res.ok)
+        return false;
+      const data = await res.json();
+      return data.approved || false;
+    } catch (err) {
+      console.error("Device check failed:", err);
+      return false;
+    }
+  }
+  async function registerDeviceWithServer(email) {
+    try {
+      const deviceId = await getOrCreateDeviceId();
+      const res = await fetch("/api/register-device", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          deviceId,
+          timestamp: Date.now()
+        })
+      });
+      if (!res.ok)
+        throw new Error("Failed to register device");
+      const data = await res.json();
+      return data.success || false;
+    } catch (err) {
+      console.error("Device registration failed:", err);
+      return false;
+    }
+  }
   function getCurrentLanguage() {
     return localStorage.getItem("lang") || "en";
   }
@@ -5362,18 +5470,6 @@
       });
     });
   }
-  async function checkAccessStatus(email) {
-    try {
-      const res = await fetch(`/api/access-status?email=${encodeURIComponent(email)}`);
-      if (!res.ok)
-        throw new Error("Failed to check access");
-      const data = await res.json();
-      return data;
-    } catch (err) {
-      console.error("Access status check failed:", err);
-      return { access: "none" };
-    }
-  }
   function grantTemporaryWiFiAccess() {
     const existingAccess = parseInt(localStorage.getItem("wifi_access_until") || "0");
     if (existingAccess > Date.now()) {
@@ -5409,12 +5505,14 @@
     updateLangSwitcherButtons(currentLang);
     initBannerSwiper();
     const savedEmail = localStorage.getItem("last_verified_email");
-    if (savedEmail) {
-      const accessStatus = await checkAccessStatus(savedEmail);
-      if (accessStatus.access === "temporary" || accessStatus.access === "permanent") {
-        console.log(`\u2713 Found existing ${accessStatus.access} access for ${savedEmail}`);
+    if (savedEmail && isDeviceApproved()) {
+      const serverApproved = await checkDeviceWithServer(savedEmail);
+      if (serverApproved) {
+        console.log(`\u2713 Device already approved for ${savedEmail}`);
         showSuccessPage();
         return;
+      } else {
+        clearDeviceApproval();
       }
     }
     const formWrapper = document.querySelector(".form");
@@ -5736,8 +5834,9 @@
           console.log("Confirm button disabled or not found");
           return;
         }
-        localStorage.setItem("last_verified_email", currentEmail);
-        console.log("Email verified \u2192 grant Wi-Fi access");
+        await registerDeviceWithServer(currentEmail);
+        setDeviceApproved(currentEmail);
+        console.log("Email verified \u2192 grant Wi-Fi access, device remembered");
         showSuccessPage();
       });
     }
