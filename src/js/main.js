@@ -1,3 +1,10 @@
+import Swiper from 'swiper'
+import { Pagination, Navigation, EffectFade } from 'swiper/modules'
+import 'swiper/css'
+import 'swiper/css/pagination'
+import 'swiper/css/navigation'
+import 'swiper/css/effect-fade'
+
 /* ---------- Localization ---------- */
 const translations = {
   en: {
@@ -33,17 +40,21 @@ const translations = {
     'error.send_failed': 'Failed to send email. Please try again.',
     'error.verify_failed': "It looks like the numbers you entered don't match our records. Please double-check and try again.",
     'email.subject': 'Your Wi-Fi Access Code',
-    'email.body': 'Your one-time code: {code} — valid for 10 minutes.',
+    'email.body': 'Your one-time code: {code} — valid for 5 minutes.',
     'form.email': 'Email Address',
     'form.birthdate': 'Date of birth',
     'form.note.default': 'You have 5 minutes of free internet access. Confirm you are 18+, accept our terms, and verify your email to continue.',
     'form.note.code': 'Resend email',
     'form.resend.title': 'Resend email',
-    'form.resend.text': 'The code is valid for 10 minutes',
+    'form.resend.text': 'The code is valid for 5 minutes',
     'popup.title': 'Exclusive welcome offer!',
     'popup.label': 'GET 100% BONUS UP TO $100',
     'popup.text': 'Limited time offer for new users! Don\'t miss out on this amazing deal.',
-    'popup.btn': 'CLAIM MY BONUS NOW'
+    'popup.btn': 'CLAIM MY BONUS NOW',
+    'wifi.title': 'Your Wi-Fi Connection Details',
+    'wifi.ssid': 'Network Name (SSID)',
+    'wifi.password': 'Password',
+    'wifi.copy': 'Copy'
   },
   ar: {
     'header.logo': 'Local Café',
@@ -78,17 +89,162 @@ const translations = {
     'error.send_failed': 'فشل إرسال البريد الإلكتروني. حاول مرة أخرى.',
     'error.verify_failed': 'الرمز غير صحيح. يرجى المحاولة مرة أخرى.',
     'email.subject': 'رمز الوصول إلى Wi-Fi',
-    'email.body': 'الرمز لمرة واحدة: {code} — صالح لمدة 10 دقائق.',
+    'email.body': 'الرمز لمرة واحدة: {code} — صالح لمدة 5 دقائق.',
     'form.email': 'عنوان البريد الإلكتروني',
     'form.birthdate': 'تاريخ الميلاد',
     'form.note.default': 'لديك 5 دقائق من الوصول المجاني للإنترنت. تأكد أنك تبلغ 18 سنة أو أكثر واقبل شروطنا وتحقق من بريدك الإلكتروني للمتابعة.',
     'form.note.code': 'إعادة إرسال البريد الإلكتروني',
     'form.resend.title': 'إعادة إرسال البريد الإلكتروني',
-    'form.resend.text': 'الرمز صالح لمدة 10 دقائق',
+    'form.resend.text': 'الرمز صالح لمدة 5 دقائق',
     'popup.title': 'عرض ترحيب حصري!',
     'popup.label': 'احصل على 100٪ مكافأة حتى $100',
     'popup.text': 'عرض محدود الوقت للمستخدمين الجدد! لا تفوت هذا العرض الرائع.',
-    'popup.btn': 'اطلب مكافأتي الآن'
+    'popup.btn': 'اطلب مكافأتي الآن',
+    'wifi.title': 'تفاصيل اتصال Wi-Fi الخاص بك',
+    'wifi.ssid': 'اسم الشبكة (SSID)',
+    'wifi.password': 'كلمة المرور',
+    'wifi.copy': 'نسخ'
+  }
+}
+
+/* ---------- Device Fingerprinting ---------- */
+async function generateDeviceFingerprint() {
+  try {
+    // Collect device information
+    const screenData = `${window.screen.width}x${window.screen.height}x${window.screen.colorDepth}`;
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const language = navigator.language;
+    const platform = navigator.platform;
+    const userAgent = navigator.userAgent;
+    
+    // Check for available plugins (limited for privacy)
+    const plugins = Array.from(navigator.plugins || []).map(p => p.name).join(',');
+    
+    // Create fingerprint string
+    const fingerprintData = [
+      screenData,
+      timezone,
+      language,
+      platform,
+      userAgent,
+      plugins
+    ].join('###');
+    
+    // Generate hash using Web Crypto API
+    const msgUint8 = new TextEncoder().encode(fingerprintData);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    
+    return hashHex;
+  } catch (error) {
+    console.error('Error generating fingerprint:', error);
+    // Fallback to simpler fingerprint if Web Crypto fails
+    return generateSimpleFingerprint();
+  }
+}
+
+function generateSimpleFingerprint() {
+  const screenData = `${window.screen.width}x${window.screen.height}`;
+  const timestamp = new Date().getTimezoneOffset();
+  const userAgent = navigator.userAgent;
+  return btoa(`${screenData}-${timestamp}-${userAgent}`).substring(0, 32);
+}
+
+/* ---------- Device Access Management ---------- */
+const DEVICE_STORAGE_KEY = 'wifi_device_id';
+const DEVICE_ACCESS_KEY = 'wifi_device_approved';
+const DEVICE_ACCESS_EXPIRY = 'wifi_device_expiry';
+
+async function getOrCreateDeviceId() {
+  let deviceId = localStorage.getItem(DEVICE_STORAGE_KEY);
+  
+  if (!deviceId) {
+    deviceId = await generateDeviceFingerprint();
+    localStorage.setItem(DEVICE_STORAGE_KEY, deviceId);
+  }
+  
+  return deviceId;
+}
+
+function setDeviceApproved(email, expiryTime = null) {
+  // Default expiry: 30 days if not specified
+  const expiry = expiryTime || Date.now() + (30 * 24 * 60 * 60 * 1000);
+  
+  localStorage.setItem(DEVICE_ACCESS_KEY, 'true');
+  localStorage.setItem(DEVICE_ACCESS_EXPIRY, expiry.toString());
+  localStorage.setItem('last_verified_email', email);
+  
+  console.log('✓ Device approved and remembered');
+}
+
+function isDeviceApproved() {
+  const isApproved = localStorage.getItem(DEVICE_ACCESS_KEY) === 'true';
+  const expiry = parseInt(localStorage.getItem(DEVICE_ACCESS_EXPIRY) || '0');
+  
+  if (!isApproved) return false;
+  
+  // Check if approval hasn't expired
+  if (expiry < Date.now()) {
+    console.log('Device approval expired');
+    clearDeviceApproval();
+    return false;
+  }
+  
+  return true;
+}
+
+function clearDeviceApproval() {
+  localStorage.removeItem(DEVICE_ACCESS_KEY);
+  localStorage.removeItem(DEVICE_ACCESS_EXPIRY);
+  // Don't remove device ID, we want to keep it for future logins
+}
+
+async function checkDeviceWithServer(email) {
+  try {
+    const deviceId = await getOrCreateDeviceId();
+    
+    const res = await fetch('/api/check-device', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        email, 
+        deviceId,
+        timestamp: Date.now()
+      })
+    });
+    
+    if (!res.ok) return false;
+    
+    const data = await res.json();
+    return data.approved || false;
+  } catch (err) {
+    console.error('Device check failed:', err);
+    return false;
+  }
+}
+
+async function registerDeviceWithServer(email) {
+  try {
+    const deviceId = await getOrCreateDeviceId();
+    
+    const res = await fetch('/api/register-device', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        email, 
+        deviceId,
+        timestamp: Date.now()
+      })
+    });
+    
+    if (!res.ok) throw new Error('Failed to register device');
+    
+    const data = await res.json();
+    return data.success || false;
+  } catch (err) {
+    console.error('Device registration failed:', err);
+    return false;
   }
 }
 
@@ -134,11 +290,11 @@ function updateLangSwitcherButtons(lang) {
   document.querySelectorAll('.lang-switcher__btn').forEach(btn => {
     btn.classList.remove('lang-switcher__btn--active')
   })
-  
+   
   if (lang === 'en') {
-    document.querySelector('.lang-switcher__btn--en')?.classList.add('lang-switcher__btn--active')
+    document.querySelectorAll('.lang-switcher__btn--en').forEach(btn => btn.classList.add('lang-switcher__btn--active'))
   } else if (lang === 'ar') {
-    document.querySelector('.lang-switcher__btn--ar')?.classList.add('lang-switcher__btn--active')
+    document.querySelectorAll('.lang-switcher__btn--ar').forEach(btn => btn.classList.add('lang-switcher__btn--active'))
   }
 }
 
@@ -154,13 +310,100 @@ function initLanguageSwitcher() {
   })
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+/* ---------- Access Status (Server-backed) ---------- */
+async function checkAccessStatus(email) {
+  try {
+    const res = await fetch(`/api/access-status?email=${encodeURIComponent(email)}`)
+    if (!res.ok) throw new Error('Failed to check access')
+    const data = await res.json()
+    return data // { access: 'none' | 'temporary' | 'permanent', expiresAt?: number }
+  } catch (err) {
+    console.error('Access status check failed:', err)
+    return { access: 'none' }
+  }
+}
+
+async function grantPermanentAccess(email) {
+  try {
+    const res = await fetch('/api/grant-permanent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    })
+    if (!res.ok) throw new Error('Failed to grant permanent access')
+    const data = await res.json()
+    console.log('✓ Permanent access granted:', data)
+    return data.success
+  } catch (err) {
+    console.error('Failed to grant permanent access:', err)
+    return false
+  }
+}
+
+/* ---------- Temporary Wi-Fi Access (5 minutes) ---------- */
+function grantTemporaryWiFiAccess() {
+  // Check if user already has active access
+  const existingAccess = parseInt(localStorage.getItem('wifi_access_until') || '0')
+  if (existingAccess > Date.now()) {
+    console.log('✓ Active Wi-Fi access found, expires in', Math.ceil((existingAccess - Date.now()) / 1000), 'seconds')
+    return
+  }
+
+  // Grant 5 minutes of access
+  const expireTime = Date.now() + 5 * 60 * 1000 // 5 minutes
+  localStorage.setItem('wifi_access_until', expireTime)
+  console.log('✓ 5-minute Wi-Fi access granted, expires at', new Date(expireTime).toLocaleTimeString())
+}
+
+function startAccessTimer() {
+  const updateTimer = () => {
+    const expireTime = parseInt(localStorage.getItem('wifi_access_until') || '0')
+    const now = Date.now()
+    const remaining = Math.max(0, expireTime - now)
+
+    if (remaining > 0) {
+      const mins = Math.floor(remaining / 60000)
+      const secs = Math.floor((remaining % 60000) / 1000)
+      // console.log(`⏱ Wi-Fi access expires in: ${mins}:${secs.toString().padStart(2, '0')}`)
+      setTimeout(updateTimer, 1000)
+    } else {
+      console.log('⏱ Wi-Fi access expired')
+      localStorage.removeItem('wifi_access_until')
+    }
+  }
+  updateTimer()
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  /* Grant temporary Wi-Fi access */
+  grantTemporaryWiFiAccess()
+  startAccessTimer()
+  
   /* Initialize language after DOM is ready */
   const currentLang = getCurrentLanguage()
   
   initLanguageSwitcher()
   updatePageLanguage(currentLang)
   updateLangSwitcherButtons(currentLang)
+  
+  /* Initialize Swiper if banner is visible */
+  initBannerSwiper()
+  
+  /* Check if device is already approved */
+  const savedEmail = localStorage.getItem('last_verified_email')
+  
+  if (savedEmail && isDeviceApproved()) {
+    // Device is approved locally, verify with server
+    const serverApproved = await checkDeviceWithServer(savedEmail)
+    if (serverApproved) {
+      console.log(`✓ Device already approved for ${savedEmail}`)
+      showSuccessPage()
+      return
+    } else {
+      // Server says device not approved, clear local approval
+      clearDeviceApproval()
+    }
+  }
   
   /* ---------- Elements ---------- */
   const formWrapper = document.querySelector('.form')
@@ -238,6 +481,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function showSuccessPage() {
+    console.log('showSuccessPage called')
     const formContainer = document.querySelector('.form-container')
     const successContainer = document.querySelector('.success-container')
     
@@ -250,6 +494,38 @@ document.addEventListener('DOMContentLoaded', () => {
       updatePageLanguage(getCurrentLanguage())
       updateLangSwitcherButtons(getCurrentLanguage())
       initSuccessPage()
+      // Re-init swiper if needed
+      setTimeout(() => initBannerSwiper(), 100)
+    }
+  }
+ 
+ 
+  function initBannerSwiper() {
+    const swiperEl = document.querySelector('.banner .swiper')
+    const successContainer = document.querySelector('.success-container')
+    if (swiperEl && successContainer && successContainer.style.display === 'block') {
+      console.log('Initializing banner Swiper')
+      const bannerSwiper = new Swiper('.banner .swiper', {
+        modules: [Pagination, Navigation, EffectFade],
+        effect: 'fade',
+        fadeEffect: {
+          crossFade: true,
+        },
+        slidesPerView: 1,
+        spaceBetween: 0,
+        pagination: {
+          el: '.banner .swiper-pagination',
+          clickable: true, 
+        },
+        autoplay: {
+          delay: 5000,
+          disableOnInteraction: false,
+        },
+        loop: true,
+      })
+      console.log('Banner Swiper initialized:', bannerSwiper)
+    } else {
+      console.log('Banner swiper element not found or not visible')
     }
   }
  
@@ -258,10 +534,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const popupWrapper = document.querySelector('.popup-wrapper')
     const popup = document.querySelector('.popup')
     
+    console.log('initSuccessPage called')
+    console.log('banner element:', banner)
+    const swiperEl = document.querySelector('.swiper')
+    console.log('swiper element:', swiperEl)
+    
     if (banner) {
       setTimeout(() => {
         banner.classList.add('is-loaded')
-      }, 2000)
+      }, 200)
     }
     
     if (popupWrapper) {
@@ -493,14 +774,17 @@ document.addEventListener('DOMContentLoaded', () => {
         body: JSON.stringify({
           email: currentEmail,
           code: getEnteredCode(),
+          birthdate: currentBirthdate,
           lang: getCurrentLanguage()
         })
       })
 
       if (!res.ok) throw new Error()
 
+      console.log('Code verified successfully')
       if (confirmBtn) {
         confirmBtn.disabled = false
+        console.log('Confirm button enabled')
       }
     } catch {
       showCodeError()
@@ -513,11 +797,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ---------- Confirm submit ---------- */
   if (codeForm) {
-    codeForm.addEventListener('submit', e => {
+    codeForm.addEventListener('submit', async e => {
       e.preventDefault()
-      if (!confirmBtn || confirmBtn.disabled) return
+      console.log('Code form submitted')
+      if (!confirmBtn || confirmBtn.disabled) {
+        console.log('Confirm button disabled or not found')
+        return
+      }
 
-      console.log('Email verified → grant Wi-Fi access')
+      // Register device for future automatic login
+      await registerDeviceWithServer(currentEmail);
+      
+      // Save verified email to localStorage and mark device as approved
+      setDeviceApproved(currentEmail);
+      
+      console.log('Email verified → grant Wi-Fi access, device remembered')
+      
       showSuccessPage()
     })
   }
@@ -543,7 +838,7 @@ document.addEventListener('DOMContentLoaded', () => {
             setFieldState(emailInput, emailError, 'error', data.error || translations[getCurrentLanguage()]['error.send_failed'])
           }
           return
-        }
+        } 
 
         // Возвращаемся к форме ввода почты
         showDefaultState()
@@ -555,7 +850,7 @@ document.addEventListener('DOMContentLoaded', () => {
           setFieldState(emailInput, emailError, 'error', translations[getCurrentLanguage()]['error.send_failed'])
         }
       }
-    })
+    }) 
   }
 })
 

@@ -214,6 +214,10 @@ h3 {
   line-height: 20.8px;
   border-radius: 40px;
   padding: 0 25px;
+  transition: all 0.1s ease 0s;
+  &:hover {
+    transform: scale(1.02);
+  }
 
 }
 

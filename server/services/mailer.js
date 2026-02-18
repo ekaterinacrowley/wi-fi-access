@@ -22,11 +22,11 @@ if (hasSMTP) {
 const i18n = {
   en: {
     subject: 'Your Wi-Fi Access Code',
-    body: 'Your one-time code: {code} — valid for 10 minutes.'
+    body: 'Your one-time code: {code} — valid for 5 minutes.'
   },
   ar: {
     subject: 'رمز الوصول إلى Wi-Fi',
-    body: 'الرمز لمرة واحدة: {code} — صالح لمدة 10 دقائق.'
+    body: 'الرمز لمرة واحدة: {code} — صالح لمدة 5 دقائق.'
   }
 }
 
